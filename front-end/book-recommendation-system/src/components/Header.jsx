@@ -1,15 +1,24 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext'; // Import AuthContext
 
 const Header = () => {
+  const { logout } = useContext(AuthContext); // Use logout function
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout(); // Clear authentication state
+    navigate('/login'); // Redirect to login
+  };
+
   return (
     <header>
+      <button onClick={handleLogout}>Logout</button>
       <nav>
         <ul>
-          <li><Link to="/">Home</Link></li>
-          <li><Link to="/books">Books</Link></li>
-          <li><Link to="/login">Login</Link></li>
-          <li><Link to="/signup">Signup</Link></li>
+          <li><a href="/">Home</a></li>
+          <li><a href="/books">Books</a></li>
+          {/* Add other links as necessary */}
         </ul>
       </nav>
     </header>
