@@ -9,11 +9,13 @@ const App = () => {
   const { isLoggedIn } = useContext(AuthContext); // Access isLoggedIn from context
 
   return (
-    <>
+    <div className="wrapper">
       {isLoggedIn && <Header />} {/* Show Header if logged in */}
-      <AppRoutes />
+      <div className="content">
+        <AppRoutes />
+      </div>
       {isLoggedIn && <Footer />} {/* Show Footer if logged in */}
-    </>
+    </div>
   );
 };
 

@@ -8,4 +8,10 @@ export const loginUser = async (email, password) => {
   return response.data; // Return the token or response data
 };
 
+// Signup API
+export const signupUser = async (userData) => {
+  const response = await axios.post(`${API_BASE_URL}/auth/signup`, userData);
+  return response.data; // Return the token or response data
+};
+
 
