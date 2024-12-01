@@ -1,14 +1,9 @@
 import React from 'react';
-import '../assets/styles/global.css'; // Optional for specific footer styling
+import '../assets/styles/global.css';
 
 const Footer = () => {
   return (
-    <footer className="footer" style={{
-      position: 'fixed',
-      bottom: 0,
-      left: 0,
-      width: '100%',
-    }}>
+    <footer className="footer">
       <div className="footer-content">
         <p>&copy; {new Date().getFullYear()} Book Recommendation System</p>
         <div className="footer-links">
