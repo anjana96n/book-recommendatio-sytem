@@ -41,3 +41,22 @@ export const createBook = async (bookData) => {
     throw error.response?.data || error.message;
   }
 };
+
+// Delete a book by ID
+export const deleteBook = async (bookId) => {
+  try {
+    await axios.delete(`${API_BASE_URL}/books/${bookId}`, getAuthHeader());
+  } catch (error) {
+    throw error.response?.data || error.message;
+  }
+};
+
+// Update a book by ID
+export const updateBook = async (bookId, bookData) => {
+  try {
+    const response = await axios.put(`${API_BASE_URL}/books/${bookId}`, bookData, getAuthHeader());
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error.message;
+  }
+};

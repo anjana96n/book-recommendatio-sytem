@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getBooks } from '../../services/bookService';
+import { getBooks, deleteBook } from '../../services/bookService';
 import { AuthContext } from '../../context/AuthContext';
 import '../../assets/styles/global.css';
 
@@ -31,8 +31,20 @@ const BookList = () => {
     fetchBooks();
   }, [isLoggedIn, navigate]);
 
-  const handleAddBook = () => {
-    navigate('/create-book');
+  const handleEditBook = (bookId, e) => {
+    e.stopPropagation();
+    navigate(`/edit-book/${bookId}`);
+  };
+
+  const handleDeleteBook = async (bookId) => {
+    if (window.confirm('Are you sure you want to delete this book?')) {
+      try {
+        await deleteBook(bookId);
+        setBooks(books.filter(book => book._id !== bookId));
+      } catch (err) {
+        setError('Error deleting book');
+      }
+    }
   };
 
   if (isLoading) return <div className="loading-spinner">Loading...</div>;
@@ -42,7 +54,7 @@ const BookList = () => {
     <div className="book-list-page">
       <div className="book-list-header">
         <h2>Discover Books</h2>
-        <button onClick={handleAddBook} className="add-book-btn">
+        <button onClick={() => navigate('/create-book')} className="add-book-btn">
           <i className="fas fa-plus"></i> Add New Book
         </button>
       </div>
@@ -69,6 +81,10 @@ const BookList = () => {
                 <h3 className="book-title">{book.title}</h3>
                 <p className="book-author">By {book.author}</p>
                 <span className="book-genre">{book.genre}</span>
+                <div className="book-actions">
+                  <button onClick={(e) => handleEditBook(book._id, e)} className="edit-button">Edit</button>
+                  <button onClick={() => handleDeleteBook(book._id)} className="delete-button">Delete</button>
+                </div>
               </div>
             </div>
           ))

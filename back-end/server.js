@@ -223,6 +223,46 @@ app.get('/api/reviews/:bookId', authenticateToken, async (req, res) => {
   }
 });
 
+// Update a book by ID
+app.put('/api/books/:id', authenticateToken, async (req, res) => {
+  try {
+    const { title, author, genre, description, coverImage } = req.body;
+
+    // Check if the book exists
+    const book = await Book.findById(req.params.id);
+    if (!book) {
+      return res.status(404).json({ message: 'Book not found' });
+    }
+
+    // Update the book details
+    book.title = title || book.title;
+    book.author = author || book.author;
+    book.genre = genre || book.genre;
+    book.description = description || book.description;
+    book.coverImage = coverImage || book.coverImage;
+
+    const updatedBook = await book.save();
+    res.json(updatedBook);
+  } catch (err) {
+    console.error('Error updating book:', err);
+    res.status(500).json({ message: 'Error updating book', error: err.message });
+  }
+});
+
+// Delete a book by ID
+app.delete('/api/books/:id', authenticateToken, async (req, res) => {
+  try {
+    const book = await Book.findByIdAndDelete(req.params.id);
+    if (!book) {
+      return res.status(404).json({ message: 'Book not found' });
+    }
+    res.json({ message: 'Book deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting book:', err);
+    res.status(500).json({ message: 'Error deleting book', error: err.message });
+  }
+});
+
 // Start the server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
