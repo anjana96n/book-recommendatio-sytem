@@ -7,6 +7,7 @@ import BookList from '../features/Books/BookList';
 import PrivateRoute from './PrivateRoute'; // Import PrivateRoute
 import Feed from '../features/Feed/Feed';
 import CreateBook from '../features/Books/CreateBook';
+import BookDetail from '../features/Books/BookDetail';
 
 const AppRoutes = () => {
   return (
@@ -17,6 +18,7 @@ const AppRoutes = () => {
       <Route path="/books" element={<PrivateRoute element={<BookList />} />} />
       <Route path="/home" element={<PrivateRoute element={<Feed />} />} />
       <Route path="/create-book" element={<PrivateRoute element={<CreateBook />} />} />
+      <Route path="/books/:bookId" element={<PrivateRoute element={<BookDetail />} />} />
     </Routes>
   );
 };

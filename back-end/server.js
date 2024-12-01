@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const User = require('./models/user');
 const Book = require('./models/book');
 const Review = require('./models/review'); // Import Review model
+require('dotenv').config(); // Add dotenv to load environment variables
 
 const app = express();
 
@@ -19,7 +20,8 @@ app.use(cors({
 app.use(express.json()); // Middleware to parse JSON requests
 
 // MongoDB connection
-mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/book-recommendation';
+mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log('MongoDB connected'))
   .catch((err) => console.log('Error connecting to MongoDB:', err));
 
@@ -111,17 +113,26 @@ app.get('/api/users', async (req, res) => {
 app.post('/api/books', authenticateToken, async (req, res) => {
   try {
     const { title, author, genre, description, coverImage } = req.body;
+    
+    // Create new book with addedBy from authenticated user
     const newBook = new Book({
       title,
       author,
       genre,
       description,
-      coverImage,
-      addedBy: req.user.userId // Get user ID from authenticated token
+      coverImage: coverImage || '',
+      addedBy: req.user.userId  // Get user ID from authenticated token
     });
-    await newBook.save();
-    res.status(201).json(newBook);
+
+    const savedBook = await newBook.save();
+    
+    // Populate the addedBy field before sending response
+    const populatedBook = await Book.findById(savedBook._id)
+      .populate('addedBy', 'username');
+    
+    res.status(201).json(populatedBook);
   } catch (err) {
+    console.error('Error creating book:', err);
     res.status(500).json({ message: 'Error creating book', error: err.message });
   }
 });
@@ -139,36 +150,75 @@ app.get('/api/books', authenticateToken, async (req, res) => {
 // Get book by ID
 app.get('/api/books/:id', authenticateToken, async (req, res) => {
   try {
-    const book = await Book.findById(req.params.id).populate('addedBy', 'username');
+    // Add error handling for invalid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid book ID format' });
+    }
+
+    const book = await Book.findById(req.params.id)
+      .populate('addedBy', 'username')
+      .select('title author genre description coverImage addedBy createdAt');
+
     if (!book) {
       return res.status(404).json({ message: 'Book not found' });
     }
+
     res.json(book);
   } catch (err) {
-    res.status(500).json({ message: 'Error fetching book', error: err.message });
+    console.error('Error fetching book:', err);
+    res.status(500).json({ message: 'Error fetching book details', error: err.message });
   }
 });
 
 // Create a review for a book
-app.post('/api/reviews', async (req, res) => {
-  const { bookId, userId, rating, comment } = req.body;
-
+app.post('/api/reviews', authenticateToken, async (req, res) => {
   try {
-    const newReview = new Review({ bookId, userId, rating, comment });
+    const { bookId, rating, comment } = req.body;
+    
+    if (!mongoose.Types.ObjectId.isValid(bookId)) {
+      return res.status(400).json({ message: 'Invalid book ID format' });
+    }
+
+    const book = await Book.findById(bookId);
+    if (!book) {
+      return res.status(404).json({ message: 'Book not found' });
+    }
+
+    const newReview = new Review({
+      bookId,
+      userId: req.user.userId,
+      rating,
+      comment,
+      createdAt: new Date()
+    });
+
     await newReview.save();
 
-    res.status(201).json(newReview);
+    // Populate user information before sending response
+    const populatedReview = await Review.findById(newReview._id)
+      .populate('userId', 'username');
+
+    res.status(201).json(populatedReview);
   } catch (err) {
+    console.error('Error creating review:', err);
     res.status(500).json({ message: 'Error creating review', error: err.message });
   }
 });
 
 // Get reviews for a book
-app.get('/api/reviews/:bookId', async (req, res) => {
+app.get('/api/reviews/:bookId', authenticateToken, async (req, res) => {
   try {
-    const reviews = await Review.find({ bookId: req.params.bookId }).populate('userId'); // Populate 'userId' field
+    if (!mongoose.Types.ObjectId.isValid(req.params.bookId)) {
+      return res.status(400).json({ message: 'Invalid book ID format' });
+    }
+
+    const reviews = await Review.find({ bookId: req.params.bookId })
+      .populate('userId', 'username')
+      .sort({ createdAt: -1 });
+
     res.json(reviews);
   } catch (err) {
+    console.error('Error fetching reviews:', err);
     res.status(500).json({ message: 'Error fetching reviews', error: err.message });
   }
 });
