@@ -6,10 +6,8 @@ const jwt = require('jsonwebtoken');
 const User = require('./models/user');
 const Book = require('./models/book');
 const Review = require('./models/review'); // Import Review model
-require('dotenv').config();
 
 const app = express();
-const jwtSecret = process.env.JWT_SECRET;
 
 // Enable CORS with specific configuration
 app.use(cors({
@@ -24,6 +22,24 @@ app.use(express.json()); // Middleware to parse JSON requests
 mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log('MongoDB connected'))
   .catch((err) => console.log('Error connecting to MongoDB:', err));
+
+// Add this middleware function at the top after your imports
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ message: 'Authentication required' });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ message: 'Invalid or expired token' });
+    }
+    req.user = user;
+    next();
+  });
+};
 
 // Basic route
 app.get('/', (req, res) => {
@@ -92,13 +108,18 @@ app.get('/api/users', async (req, res) => {
 });
 
 // Create a new book
-app.post('/api/books', async (req, res) => {
+app.post('/api/books', authenticateToken, async (req, res) => {
   try {
-    const { title, author, genre, description, coverImage, addedBy } = req.body;
-
-    const newBook = new Book({ title, author, genre, description, coverImage, addedBy });
+    const { title, author, genre, description, coverImage } = req.body;
+    const newBook = new Book({
+      title,
+      author,
+      genre,
+      description,
+      coverImage,
+      addedBy: req.user.userId // Get user ID from authenticated token
+    });
     await newBook.save();
-
     res.status(201).json(newBook);
   } catch (err) {
     res.status(500).json({ message: 'Error creating book', error: err.message });
@@ -106,12 +127,25 @@ app.post('/api/books', async (req, res) => {
 });
 
 // Get all books
-app.get('/api/books', async (req, res) => {
+app.get('/api/books', authenticateToken, async (req, res) => {
   try {
-    const books = await Book.find().populate('addedBy'); // Populate 'addedBy' field with user data
+    const books = await Book.find().populate('addedBy', 'username');
     res.json(books);
   } catch (err) {
     res.status(500).json({ message: 'Error fetching books', error: err.message });
+  }
+});
+
+// Get book by ID
+app.get('/api/books/:id', authenticateToken, async (req, res) => {
+  try {
+    const book = await Book.findById(req.params.id).populate('addedBy', 'username');
+    if (!book) {
+      return res.status(404).json({ message: 'Book not found' });
+    }
+    res.json(book);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching book', error: err.message });
   }
 });
 

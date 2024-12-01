@@ -1,32 +1,40 @@
 import React, { createContext, useState, useEffect } from 'react';
 
-// Create the AuthContext
-export const AuthContext = createContext();
+export const AuthContext = createContext(null);
 
-// AuthProvider to wrap the app
 export const AuthProvider = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Check localStorage for token on mount
   useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    setIsLoggedIn(!!token);
+    // Check for token on initial load
+    const token = localStorage.getItem('token');
+    if (token) {
+      setIsLoggedIn(true);
+      // You could also verify the token here
+    }
+    setLoading(false);
   }, []);
 
-  // Login function
-  const login = (token) => {
-    localStorage.setItem('authToken', token);
+  const login = (token, userData) => {
+    localStorage.setItem('token', token);
     setIsLoggedIn(true);
+    setUser(userData);
   };
 
-  // Logout function
   const logout = () => {
-    localStorage.removeItem('authToken');
+    localStorage.removeItem('token');
     setIsLoggedIn(false);
+    setUser(null);
   };
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, login, logout }}>
+    <AuthContext.Provider value={{ isLoggedIn, user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,42 +1,68 @@
-import React, { useEffect, useState } from 'react';
-import { getBooks } from '../../services/bookService'; // Import getBooks service
+import React, { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getBooks } from '../../services/bookService';
+import { AuthContext } from '../../context/AuthContext';
 
 const BookList = () => {
   const [books, setBooks] = useState([]);
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const { isLoggedIn } = useContext(AuthContext);
 
   useEffect(() => {
-    const token = localStorage.getItem('authToken'); // Get the token from localStorage
-    if (!token) {
-      // Redirect to login if token is missing
+    if (!isLoggedIn) {
       navigate('/login');
+      return;
     }
 
     const fetchBooks = async () => {
       try {
-        const data = await getBooks(token); // Call the getBooks service
+        const data = await getBooks();
         setBooks(data);
       } catch (err) {
         setError('Error fetching books');
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchBooks();
-  }, [navigate]);
+  }, [isLoggedIn, navigate]);
+
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div className="error-message">{error}</div>;
 
   return (
-    <div>
+    <div className="book-list-container">
       <h2>Book List</h2>
-      {error && <p className="error-message">{error}</p>}
-      <ul>
+      <div className="books-grid">
         {books.length > 0 ? (
-          books.map((book) => <li key={book._id}>{book.title}</li>)
+          books.map((book) => (
+            <div 
+              key={book._id} 
+              className="book-card"
+              onClick={() => navigate(`/books/${book._id}`)}
+            >
+              <img 
+                src={book.coverImage || process.env.REACT_APP_DEFAULT_BOOK_COVER}
+                alt={book.title}
+                className="book-cover"
+                onError={(e) => {
+                  e.target.src = process.env.REACT_APP_DEFAULT_BOOK_COVER;
+                }}
+              />
+              <div className="book-info">
+                <h3>{book.title}</h3>
+                <p className="author">{book.author}</p>
+                <span className="genre-tag">{book.genre}</span>
+              </div>
+            </div>
+          ))
         ) : (
-          <p>No books found</p>
+          <p className="no-books-message">No books found</p>
         )}
-      </ul>
+      </div>
     </div>
   );
 };
