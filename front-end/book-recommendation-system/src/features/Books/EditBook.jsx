@@ -99,7 +99,7 @@ const EditBook = () => {
             <select
               id="genre"
               name="genre"
-              value={formData.genre}
+              value={formData.genre} // Ensure the genre is set correctly
               onChange={handleChange}
               required
             >
@@ -161,4 +161,4 @@ const EditBook = () => {
   );
 };
 
-export default EditBook; 
+export default EditBook;
