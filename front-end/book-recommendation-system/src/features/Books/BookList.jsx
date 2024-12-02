@@ -2,12 +2,15 @@ import React, { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getBooks, deleteBook } from '../../services/bookService';
 import { AuthContext } from '../../context/AuthContext';
+import ConfirmationModal from '../../components/ConfirmationModal';
 import '../../assets/styles/global.css';
 
 const BookList = () => {
   const [books, setBooks] = useState([]);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [bookToDelete, setBookToDelete] = useState(null);
   const navigate = useNavigate();
   const { isLoggedIn } = useContext(AuthContext);
 
@@ -36,15 +39,29 @@ const BookList = () => {
     navigate(`/edit-book/${bookId}`);
   };
 
-  const handleDeleteBook = async (bookId) => {
-    if (window.confirm('Are you sure you want to delete this book?')) {
+  const handleDeleteBook = (bookId, e) => {
+    e.stopPropagation();
+    setBookToDelete(bookId);
+    setIsModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (bookToDelete) {
       try {
-        await deleteBook(bookId);
-        setBooks(books.filter(book => book._id !== bookId));
+        await deleteBook(bookToDelete);
+        const updatedBooks = await getBooks();
+        setBooks(updatedBooks);
+        setBookToDelete(null);
       } catch (err) {
         setError('Error deleting book');
       }
     }
+    setIsModalOpen(false);
+  };
+
+  const cancelDelete = () => {
+    setIsModalOpen(false);
+    setBookToDelete(null);
   };
 
   if (isLoading) return <div className="loading-spinner">Loading...</div>;
@@ -83,7 +100,7 @@ const BookList = () => {
                 <span className="book-genre">{book.genre}</span>
                 <div className="book-actions">
                   <button onClick={(e) => handleEditBook(book._id, e)} className="edit-button">Edit</button>
-                  <button onClick={() => handleDeleteBook(book._id)} className="delete-button">Delete</button>
+                  <button onClick={(e) => handleDeleteBook(book._id, e)} className="delete-button">Delete</button>
                 </div>
               </div>
             </div>
@@ -95,6 +112,13 @@ const BookList = () => {
           </div>
         )}
       </div>
+
+      <ConfirmationModal 
+        isOpen={isModalOpen}
+        onClose={cancelDelete}
+        onConfirm={confirmDelete}
+        message="Are you sure you want to delete this book?"
+      />
     </div>
   );
 };
