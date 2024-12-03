@@ -1,32 +1,85 @@
-import React from 'react';
+import React, { useEffect, useState, useContext } from 'react';
+import { getMostRatedBooks, getRecentActivities } from '../../services/bookService';
+import { AuthContext } from '../../context/AuthContext';
 import '../../assets/styles/global.css';
 
 const Feed = () => {
-  const posts = [
-    { id: 1, title: "Exploring React for Beginners", description: "A comprehensive guide for learning React." },
-    { id: 2, title: "JavaScript Tips and Tricks", description: "Improve your JavaScript skills with these helpful tips." },
-    { id: 3, title: "Top 10 Books to Read in 2024", description: "Discover the most anticipated books for this year." },
-  ];
+  const [mostRatedBooks, setMostRatedBooks] = useState([]);
+  const [recentActivities, setRecentActivities] = useState([]);
+  const [error, setError] = useState('');
+  const { isLoggedIn } = useContext(AuthContext);
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      return; // Redirect to login if not logged in
+    }
+
+    const fetchFeedData = async () => {
+      try {
+        const [ratedBooks, activities] = await Promise.all([
+          getMostRatedBooks(),
+          getRecentActivities()
+        ]);
+        setMostRatedBooks(ratedBooks);
+        setRecentActivities(activities);
+      } catch (err) {
+        console.error('Error fetching feed data:', err);
+        setError('Error fetching feed data');
+      }
+    };
+
+    fetchFeedData();
+  }, [isLoggedIn]);
 
   return (
     <div className="feed-container">
-      <h2 className="feed-title">Welcome to the Book Feed!</h2>
-      <p className="feed-intro">Explore the latest books and reviews shared by our community.</p>
+      <h2>Feed</h2>
+      {error && <div className="error-message">{error}</div>}
 
-      <div className="feed-content">
-        {posts.length === 0 ? (
-          <p className="empty-feed">No posts available. Check back later!</p>
-        ) : (
-          posts.map((post) => (
-            <div key={post.id} className="feed-item">
-              <h3 className="feed-item-title">{post.title}</h3>
-              <p className="feed-item-description">{post.description}</p>
-            </div>
-          ))
-        )}
+      <div className="most-rated-section">
+        <h3>Most Rated Books</h3>
+        <div className="books-grid">
+          {mostRatedBooks.length > 0 ? (
+            mostRatedBooks.map((book) => (
+              <div key={book._id} className="book-card">
+                <div className="book-card-image">
+                  <img 
+                    src={book.coverImage || process.env.REACT_APP_DEFAULT_BOOK_COVER}
+                    alt={book.title}
+                    className="book-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                </div>
+                <div className="book-info">
+                  <h3 className="book-title">{book.title}</h3>
+                  <p className="book-author">By {book.author}</p>
+                  <span className="book-genre">{book.genre}</span>
+                  <p className="book-rating">Rating: {book.averageRating} / 5</p>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p>No rated books found.</p>
+          )}
+        </div>
       </div>
 
-      <button className="go-back-button">Back to Home</button>
+      <div className="recent-activities-section">
+        <h3>Recent Activities</h3>
+        <ul className="activities-list">
+          {recentActivities.length > 0 ? (
+            recentActivities.map((activity, index) => (
+              <li key={index} className="activity-item">
+                {activity.message} - <span>{new Date(activity.date).toLocaleDateString()}</span>
+              </li>
+            ))
+          ) : (
+            <p>No recent activities found.</p>
+          )}
+        </ul>
+      </div>
     </div>
   );
 };

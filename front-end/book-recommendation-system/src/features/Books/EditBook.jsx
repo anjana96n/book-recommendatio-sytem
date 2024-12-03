@@ -1,10 +1,11 @@
-import React, { useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { createBook } from '../../services/bookService';
+import React, { useState, useEffect, useContext } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { getBookById, updateBook } from '../../services/bookService';
 import { AuthContext } from '../../context/AuthContext';
 import '../../assets/styles/global.css';
 
-const CreateBook = () => {
+const EditBook = () => {
+  const { bookId } = useParams();
   const navigate = useNavigate();
   const { isLoggedIn } = useContext(AuthContext);
   const [formData, setFormData] = useState({
@@ -16,13 +17,27 @@ const CreateBook = () => {
     averageRating: 0,
   });
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Redirect if not logged in
-  if (!isLoggedIn) {
-    navigate('/login');
-    return null;
-  }
+  useEffect(() => {
+    if (!isLoggedIn) {
+      navigate('/login');
+      return; // Early return if not logged in
+    }
+
+    const fetchBook = async () => {
+      try {
+        const bookData = await getBookById(bookId);
+        setFormData(bookData);
+      } catch (err) {
+        setError('Failed to load book details');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchBook();
+  }, [bookId, isLoggedIn, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -35,36 +50,22 @@ const CreateBook = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setIsLoading(true);
-
-    // Basic validation
-    if (!formData.title || !formData.author || !formData.genre || !formData.description) {
-      setError('Please fill in all required fields');
-      setIsLoading(false);
-      return;
-    }
-
+    
     try {
-      // If no cover image is provided, use default
-      const bookData = {
-        ...formData,
-        coverImage: formData.coverImage || process.env.REACT_APP_DEFAULT_BOOK_COVER,
-        averageRating: formData.averageRating || 0
-      };
-
-      await createBook(bookData);
+      await updateBook(bookId, formData);
       navigate('/books');
     } catch (err) {
-      setError(err.message || 'Failed to create book');
-    } finally {
-      setIsLoading(false);
+      setError(err.message || 'Failed to update book');
     }
   };
+
+  if (isLoading) return <div className="loading-spinner">Loading...</div>;
+  if (error) return <div className="error-message">{error}</div>;
 
   return (
     <div className="create-book-container">
       <div className="create-book-content">
-        <h2>Add New Book</h2>
+        <h2>Edit Book</h2>
         {error && <div className="error-message">{error}</div>}
         
         <form onSubmit={handleSubmit} className="create-book-form">
@@ -99,7 +100,7 @@ const CreateBook = () => {
             <select
               id="genre"
               name="genre"
-              value={formData.genre}
+              value={formData.genre} // Ensure the genre is set correctly
               onChange={handleChange}
               required
             >
@@ -151,9 +152,8 @@ const CreateBook = () => {
             <button 
               type="submit" 
               className="submit-button"
-              disabled={isLoading}
             >
-              {isLoading ? 'Creating...' : 'Create Book'}
+              Update Book
             </button>
           </div>
         </form>
@@ -162,4 +162,4 @@ const CreateBook = () => {
   );
 };
 
-export default CreateBook; 
+export default EditBook;

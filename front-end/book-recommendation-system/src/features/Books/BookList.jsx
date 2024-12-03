@@ -1,13 +1,16 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getBooks } from '../../services/bookService';
+import { getBooks, deleteBook } from '../../services/bookService';
 import { AuthContext } from '../../context/AuthContext';
+import ConfirmationModal from '../../components/ConfirmationModal';
 import '../../assets/styles/global.css';
 
 const BookList = () => {
   const [books, setBooks] = useState([]);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [bookToDelete, setBookToDelete] = useState(null);
   const navigate = useNavigate();
   const { isLoggedIn } = useContext(AuthContext);
 
@@ -31,8 +34,34 @@ const BookList = () => {
     fetchBooks();
   }, [isLoggedIn, navigate]);
 
-  const handleAddBook = () => {
-    navigate('/create-book');
+  const handleEditBook = (bookId, e) => {
+    e.stopPropagation();
+    navigate(`/edit-book/${bookId}`);
+  };
+
+  const handleDeleteBook = (bookId, e) => {
+    e.stopPropagation();
+    setBookToDelete(bookId);
+    setIsModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (bookToDelete) {
+      try {
+        await deleteBook(bookToDelete);
+        const updatedBooks = await getBooks();
+        setBooks(updatedBooks);
+        setBookToDelete(null);
+      } catch (err) {
+        setError('Error deleting book');
+      }
+    }
+    setIsModalOpen(false);
+  };
+
+  const cancelDelete = () => {
+    setIsModalOpen(false);
+    setBookToDelete(null);
   };
 
   if (isLoading) return <div className="loading-spinner">Loading...</div>;
@@ -42,7 +71,7 @@ const BookList = () => {
     <div className="book-list-page">
       <div className="book-list-header">
         <h2>Discover Books</h2>
-        <button onClick={handleAddBook} className="add-book-btn">
+        <button onClick={() => navigate('/create-book')} className="add-book-btn">
           <i className="fas fa-plus"></i> Add New Book
         </button>
       </div>
@@ -69,6 +98,10 @@ const BookList = () => {
                 <h3 className="book-title">{book.title}</h3>
                 <p className="book-author">By {book.author}</p>
                 <span className="book-genre">{book.genre}</span>
+                <div className="book-actions">
+                  <button onClick={(e) => handleEditBook(book._id, e)} className="edit-button">Edit</button>
+                  <button onClick={(e) => handleDeleteBook(book._id, e)} className="delete-button">Delete</button>
+                </div>
               </div>
             </div>
           ))
@@ -79,6 +112,13 @@ const BookList = () => {
           </div>
         )}
       </div>
+
+      <ConfirmationModal 
+        isOpen={isModalOpen}
+        onClose={cancelDelete}
+        onConfirm={confirmDelete}
+        message="Are you sure you want to delete this book?"
+      />
     </div>
   );
 };
