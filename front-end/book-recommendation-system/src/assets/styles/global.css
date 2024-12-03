@@ -273,10 +273,9 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20px;
-  background: linear-gradient(135deg, #6c63ff, #b49eff); /* Background gradient */
-  color: #fff;
-  min-height: 100vh; /* Ensure it covers the full screen */
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .feed-title {
@@ -996,4 +995,32 @@ body {
 
 .confirm-button:hover {
   background-color: #5a54d1;
+}
+
+/* Feed Styles */
+.feed-container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.most-rated-section,
+.recent-activities-section {
+  margin-bottom: 2rem;
+}
+
+.books-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.activity-item {
+  padding: 0.5rem;
+  border-bottom: 1px solid #ddd;
+  color: #333;
+}
+
+.activity-item:last-child {
+  border-bottom: none; /* Remove border from last item */
 }

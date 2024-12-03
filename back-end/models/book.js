@@ -21,6 +21,10 @@ const bookSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  averageRating: {
+    type: Number,
+    default: 0
+  },
   addedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

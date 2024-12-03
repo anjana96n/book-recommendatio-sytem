@@ -12,7 +12,8 @@ const CreateBook = () => {
     author: '',
     genre: '',
     description: '',
-    coverImage: ''
+    coverImage: '',
+    averageRating: 0,
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -47,7 +48,8 @@ const CreateBook = () => {
       // If no cover image is provided, use default
       const bookData = {
         ...formData,
-        coverImage: formData.coverImage || process.env.REACT_APP_DEFAULT_BOOK_COVER
+        coverImage: formData.coverImage || process.env.REACT_APP_DEFAULT_BOOK_COVER,
+        averageRating: formData.averageRating || 0
       };
 
       await createBook(bookData);

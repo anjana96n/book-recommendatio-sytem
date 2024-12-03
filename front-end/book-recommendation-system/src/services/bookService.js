@@ -60,3 +60,23 @@ export const updateBook = async (bookId, bookData) => {
     throw error.response?.data || error.message;
   }
 };
+
+// Fetch most rated books
+export const getMostRatedBooks = async () => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/books/most-rated`, getAuthHeader());
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error.message;
+  }
+};
+
+// Fetch recent activities
+export const getRecentActivities = async () => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/activities`, getAuthHeader());
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error.message;
+  }
+};

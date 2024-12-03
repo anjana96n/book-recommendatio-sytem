@@ -13,7 +13,8 @@ const EditBook = () => {
     author: '',
     genre: '',
     description: '',
-    coverImage: ''
+    coverImage: '',
+    averageRating: 0,
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);

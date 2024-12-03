@@ -113,7 +113,7 @@ app.get('/api/users', async (req, res) => {
 app.post('/api/books', authenticateToken, async (req, res) => {
   try {
     const { title, author, genre, description, coverImage } = req.body;
-    
+
     // Create new book with addedBy from authenticated user
     const newBook = new Book({
       title,
@@ -121,6 +121,7 @@ app.post('/api/books', authenticateToken, async (req, res) => {
       genre,
       description,
       coverImage: coverImage || '',
+      averageRating: 0,
       addedBy: req.user.userId  // Get user ID from authenticated token
     });
 
@@ -150,7 +151,7 @@ app.get('/api/books', authenticateToken, async (req, res) => {
 // Get book by ID
 app.get('/api/books/:id', authenticateToken, async (req, res) => {
   try {
-    // Add error handling for invalid ObjectId
+    // Validate ObjectId format
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ message: 'Invalid book ID format' });
     }
@@ -174,16 +175,19 @@ app.get('/api/books/:id', authenticateToken, async (req, res) => {
 app.post('/api/reviews', authenticateToken, async (req, res) => {
   try {
     const { bookId, rating, comment } = req.body;
-    
+
+    // Validate the book ID format
     if (!mongoose.Types.ObjectId.isValid(bookId)) {
       return res.status(400).json({ message: 'Invalid book ID format' });
     }
 
+    // Find the book
     const book = await Book.findById(bookId);
     if (!book) {
       return res.status(404).json({ message: 'Book not found' });
     }
 
+    // Create the new review
     const newReview = new Review({
       bookId,
       userId: req.user.userId,
@@ -192,11 +196,23 @@ app.post('/api/reviews', authenticateToken, async (req, res) => {
       createdAt: new Date()
     });
 
+    // Save the review
     await newReview.save();
+
+    // Calculate the new average rating
+    const reviews = await Review.find({ bookId });
+    const averageRating = reviews.reduce((acc, review) => acc + review.rating, 0) / reviews.length;
+
+    // Update the book's average rating
+    book.averageRating = averageRating;
+    await book.save();
 
     // Populate user information before sending response
     const populatedReview = await Review.findById(newReview._id)
       .populate('userId', 'username');
+
+    console.log('New Review:', newReview);
+    console.log('Average Rating:', averageRating);
 
     res.status(201).json(populatedReview);
   } catch (err) {
@@ -226,7 +242,7 @@ app.get('/api/reviews/:bookId', authenticateToken, async (req, res) => {
 // Update a book by ID
 app.put('/api/books/:id', authenticateToken, async (req, res) => {
   try {
-    const { title, author, genre, description, coverImage } = req.body;
+    const { title, author, genre, description, coverImage ,averageRating} = req.body;
 
     // Check if the book exists
     const book = await Book.findById(req.params.id);
@@ -240,6 +256,7 @@ app.put('/api/books/:id', authenticateToken, async (req, res) => {
     book.genre = genre || book.genre;
     book.description = description || book.description;
     book.coverImage = coverImage || book.coverImage;
+    book.averageRating = averageRating || book.averageRating;
 
     const updatedBook = await book.save();
     res.json(updatedBook);
@@ -260,6 +277,59 @@ app.delete('/api/books/:id', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error('Error deleting book:', err);
     res.status(500).json({ message: 'Error deleting book', error: err.message });
+  }
+});
+
+// Get most rated books
+app.get('/api/books/most-rated', authenticateToken, async (req, res) => {
+  try {
+    console.log('Fetching most rated books...');
+    const books = await Book.find()
+      .sort({ averageRating: -1 })
+      .limit(10);
+    console.log('Most Rated Books:', books);
+    res.json(books);
+  } catch (err) {
+    console.error('Error fetching most rated books:', err);
+    res.status(500).json({ message: 'Error fetching most rated books', error: err.message });
+  }
+});
+
+// Get recent activities
+app.get('/api/activities', authenticateToken, async (req, res) => {
+  try {
+    // This should fetch activities from your database
+    const activities = [
+      { message: 'User X added a new book: "Book Title"', date: new Date() },
+      { message: 'User Y rated "Another Book" with 5 stars', date: new Date() },
+      // Add more activities as needed
+    ];
+    res.json(activities);
+  } catch (err) {
+    console.error('Error fetching activities:', err);
+    res.status(500).json({ message: 'Error fetching activities', error: err.message });
+  }
+});
+
+// Update a review
+app.put('/api/reviews/:id', authenticateToken, async (req, res) => {
+  try {
+    const { rating, comment } = req.body;
+
+    const review = await Review.findById(req.params.id);
+    if (!review) {
+      return res.status(404).json({ message: 'Review not found' });
+    }
+
+    // Update the review
+    review.rating = rating;
+    review.comment = comment;
+    await review.save();
+
+    res.json(review);
+  } catch (err) {
+    console.error('Error updating review:', err);
+    res.status(500).json({ message: 'Error updating review', error: err.message });
   }
 });
 
